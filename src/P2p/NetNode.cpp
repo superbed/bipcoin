@@ -957,35 +957,8 @@ namespace CryptoNote
 #ifdef ALLOW_DEBUG_COMMANDS
 
   bool NodeServer::check_trust(const proof_of_trust &tr) {
-    uint64_t local_time = time(NULL);
-    uint64_t time_delata = local_time > tr.time ? local_time - tr.time : tr.time - local_time;
-
-    if (time_delata > 24 * 60 * 60) {
-      logger(ERROR) << "check_trust failed to check time conditions, local_time=" << local_time << ", proof_time=" << tr.time;
+      logger(ERROR) << "check_trust failed: removed";
       return false;
-    }
-
-    if (m_last_stat_request_time >= tr.time) {
-      logger(ERROR) << "check_trust failed to check time conditions, last_stat_request_time=" << m_last_stat_request_time << ", proof_time=" << tr.time;
-      return false;
-    }
-
-    if (m_config.m_peer_id != tr.peer_id) {
-      logger(ERROR) << "check_trust failed: peer_id mismatch (passed " << tr.peer_id << ", expected " << m_config.m_peer_id << ")";
-      return false;
-    }
-
-    Crypto::PublicKey pk;
-    Common::podFromHex(CryptoNote::P2P_STAT_TRUSTED_PUB_KEY, pk);
-    Crypto::Hash h = get_proof_of_trust_hash(tr);
-    if (!Crypto::check_signature(h, pk, tr.sign)) {
-      logger(ERROR) << "check_trust failed: sign check failed";
-      return false;
-    }
-
-    //update last request time
-    m_last_stat_request_time = tr.time;
-    return true;
   }
   //-----------------------------------------------------------------------------------
   
