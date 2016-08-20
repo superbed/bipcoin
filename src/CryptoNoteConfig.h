@@ -114,6 +114,7 @@ const std::initializer_list<const char*> SEED_NODES = {
   "149.56.89.152:18870",   // Slopey server 
   "216.158.233.34:18870",  // node.bipcoin.org
   "138.68.79.3:18870",     // BippyGermany
+  "45.32.31.49:18870",     // Tokyo
 };
 
 struct CheckpointData {
