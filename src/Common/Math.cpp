@@ -5,5 +5,7 @@
 #include "Math.h"
 
 namespace {
+#ifdef WIN32
 char suppressMSVCWarningLNK4221;
+#endif
 }

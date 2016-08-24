@@ -1,3 +1,18 @@
+BipCoin 0.0.0.2  (August 24, 2016)
+
+- Compiler warnings: Added #ifdef WIN32 
+- Cleanliness: Added #define NOMINMAX before including Windows.h
+- Cleanup comments in CryptNoteConfig.h
+- Improve logging in P2p
+- Added checkpoints at blocks 4114, and 4581
+
+
+BipCoin 0.0.0.1  (August 21, 2016)
+
+- Initial Release
+
+
+------------------------------------------------------------------------------------------
 Release notes 1.1.1
 
 - New API for CryptoNote RPC Wallet
