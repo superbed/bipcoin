@@ -83,7 +83,7 @@ void Miner::runWorkers(BlockMiningParameters blockMiningParameters, size_t threa
   m_miningStopped.set();
 }
 
-void Miner::workerFunc(const Block& blockTemplate, difficulty_type difficulty, uint32_t nonceStep) {
+void Miner::workerFunc(const Block& blockTemplate, Difficulty difficulty, uint32_t nonceStep) {
   try {
     Block block = blockTemplate;
     Crypto::cn_context cryptoContext;

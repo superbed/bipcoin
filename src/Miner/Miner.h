@@ -20,7 +20,7 @@ namespace CryptoNote {
 
 struct BlockMiningParameters {
   Block blockTemplate;
-  difficulty_type difficulty;
+  Difficulty difficulty;
 };
 
 class Miner {
@@ -47,7 +47,7 @@ private:
   Logging::LoggerRef m_logger;
 
   void runWorkers(BlockMiningParameters blockMiningParameters, size_t threadCount);
-  void workerFunc(const Block& blockTemplate, difficulty_type difficulty, uint32_t nonceStep);
+  void workerFunc(const Block& blockTemplate, Difficulty difficulty, uint32_t nonceStep);
   bool setStateBlockFound();
 };
 

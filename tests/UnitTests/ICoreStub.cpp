@@ -253,7 +253,7 @@ bool ICoreStub::scanOutputkeysForIndices(const CryptoNote::KeyInput& txInToKey, 
   return true;
 }
 
-bool ICoreStub::getBlockDifficulty(uint32_t height, CryptoNote::difficulty_type& difficulty) {
+bool ICoreStub::getBlockDifficulty(uint32_t height, CryptoNote::Difficulty& difficulty) {
   return true;
 }
 
