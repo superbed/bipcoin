@@ -26,7 +26,7 @@ public:
     }
   }
 
-  bool check_block_purged(CryptoNote::core& c, size_t eventIdx, const std::vector<test_event_entry>& events) {
+  bool check_block_purged(CryptoNote::Core& c, size_t eventIdx, const std::vector<test_event_entry>& events) {
     DEFINE_TESTS_ERROR_CONTEXT("CheckBlockPurged::check_block_purged");
 
     CHECK_TEST_CONDITION(m_invalidBlockIdx < eventIdx);
@@ -36,7 +36,7 @@ public:
     return true;
   }
 
-  bool markInvalidBlock(CryptoNote::core& c, size_t eventIdx, const std::vector<test_event_entry>& events) {
+  bool markInvalidBlock(CryptoNote::Core& c, size_t eventIdx, const std::vector<test_event_entry>& events) {
     m_invalidBlockIdx = eventIdx + 1;
     return true;
   }
@@ -56,7 +56,7 @@ struct CheckBlockAccepted : public test_chain_unit_base {
     REGISTER_CALLBACK("check_block_accepted", CheckBlockAccepted::check_block_accepted);
   }
 
-  bool check_block_accepted(CryptoNote::core& c, size_t /*eventIdx*/, const std::vector<test_event_entry>& /*events*/) {
+  bool check_block_accepted(CryptoNote::Core& c, size_t /*eventIdx*/, const std::vector<test_event_entry>& /*events*/) {
     DEFINE_TESTS_ERROR_CONTEXT("CheckBlockAccepted::check_block_accepted");
 
     CHECK_EQ(0, c.get_pool_transactions_count());
@@ -295,8 +295,8 @@ struct gen_block_invalid_binary_format : public test_chain_unit_base
 
   bool generate(std::vector<test_event_entry>& events) const;
   bool check_block_verification_context(const CryptoNote::block_verification_context& bvc, size_t event_idx, const CryptoNote::Block& /*blk*/);
-  bool check_all_blocks_purged(CryptoNote::core& c, size_t ev_index, const std::vector<test_event_entry>& events);
-  bool corrupt_blocks_boundary(CryptoNote::core& c, size_t ev_index, const std::vector<test_event_entry>& events);
+  bool check_all_blocks_purged(CryptoNote::Core& c, size_t ev_index, const std::vector<test_event_entry>& events);
+  bool corrupt_blocks_boundary(CryptoNote::Core& c, size_t ev_index, const std::vector<test_event_entry>& events);
 
 private:
   size_t m_corrupt_blocks_begin_idx;
