@@ -287,6 +287,7 @@ private:
 };
 
 TEST_F(TransfersTest, base) {
+  Logging::ConsoleLogger consoleLogger(static_cast<Logging::Level>(Logging::TRACE));
   uint64_t TRANSFER_AMOUNT;
   currency.parseAmount("500000.5", TRANSFER_AMOUNT);
 
@@ -303,8 +304,8 @@ TEST_F(TransfersTest, base) {
 
   AccountKeys dstKeys = reinterpret_cast<const AccountKeys&>(dstAcc.getAccountKeys());
 
-  BlockchainSynchronizer blockSync(*node2.get(), currency.genesisBlockHash());
-  TransfersSyncronizer transferSync(currency, blockSync, *node2.get());
+  BlockchainSynchronizer blockSync(*node2.get(), consoleLogger, currency.genesisBlockHash());
+  TransfersSyncronizer transferSync(currency, consoleLogger, blockSync, *node2.get());
   TransfersObserver transferObserver;
   WalletLegacyObserver walletObserver;
 
@@ -464,14 +465,16 @@ std::unique_ptr<ITransaction> createTransferFromMultisignature(
 
 TEST_F(MultisignatureTest, createMulitisignatureTransaction) {
 
+  Logging::ConsoleLogger consoleLogger(static_cast<Logging::Level>(Logging::TRACE));
+
   std::unique_ptr<CryptoNote::INode> node1;
   std::unique_ptr<CryptoNote::INode> node2;
 
   nodeDaemons[0]->makeINode(node1);
   nodeDaemons[1]->makeINode(node2);
 
-  BlockchainSynchronizer blockSync(*node2.get(), currency.genesisBlockHash());
-  TransfersSyncronizer transferSync(currency, blockSync, *node2.get());
+  BlockchainSynchronizer blockSync(*node2.get(), consoleLogger, currency.genesisBlockHash());
+  TransfersSyncronizer transferSync(currency, consoleLogger, blockSync, *node2.get());
   
   // add transaction collector
   TransactionConsumer txConsumer;

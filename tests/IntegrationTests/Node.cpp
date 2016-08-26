@@ -165,8 +165,9 @@ void NodeTest::dumpBlockchainInfo(INode& node) {
   storeBlockchainInfo("blocks.js", bc);
 }
 
-
 TEST_F(NodeTest, generateBlockchain) {
+
+  Logging::ConsoleLogger consoleLogger(static_cast<Logging::Level>(Logging::TRACE));
   
   auto networkCfg = TestNetworkBuilder(2, Topology::Ring).build();
   networkCfg[0].cleanupDataDir = false;
@@ -180,7 +181,7 @@ TEST_F(NodeTest, generateBlockchain) {
     ASSERT_TRUE(daemon.makeINode(mainNode));
 
     std::string password = "pass";
-    CryptoNote::WalletGreen wallet(dispatcher, currency, *mainNode);
+    CryptoNote::WalletGreen wallet(dispatcher, currency, *mainNode, consoleLogger);
 
     wallet.initialize(password);
 
@@ -212,6 +213,7 @@ TEST_F(NodeTest, dumpBlockchain) {
 }
 
 TEST_F(NodeTest, addMoreBlocks) {
+  Logging::ConsoleLogger consoleLogger(static_cast<Logging::Level>(Logging::TRACE));
   auto networkCfg = TestNetworkBuilder(2, Topology::Ring).build();
   networkCfg[0].cleanupDataDir = false;
   networkCfg[0].blockchainLocation = "testnet_300";
@@ -228,7 +230,7 @@ TEST_F(NodeTest, addMoreBlocks) {
     auto startHeight = daemon.getLocalHeight();
 
     std::string password = "pass";
-    CryptoNote::WalletGreen wallet(dispatcher, currency, *mainNode);
+    CryptoNote::WalletGreen wallet(dispatcher, currency, *mainNode,consoleLogger);
 
     {
       std::ifstream walletFile("wallet.bin", std::ios::binary);

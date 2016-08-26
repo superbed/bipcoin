@@ -114,8 +114,8 @@ public:
     m_currency(CryptoNote::CurrencyBuilder(m_logger).currency()),
     generator(m_currency),
     m_node(generator),
-    m_sync(m_node, m_currency.genesisBlockHash()),
-    m_transfersSync(m_currency, m_sync, m_node) {
+    m_sync(m_node, m_logger, m_currency.genesisBlockHash()),
+    m_transfersSync(m_currency, m_logger, m_sync, m_node) {
   }
 
   void addAccounts(size_t count) {

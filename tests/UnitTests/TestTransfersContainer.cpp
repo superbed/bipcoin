@@ -31,7 +31,7 @@ namespace {
 
     TransfersContainerTest() : 
       currency(CurrencyBuilder(logger).currency()), 
-      container(currency, TEST_TRANSACTION_SPENDABLE_AGE), 
+      container(currency, logger, TEST_TRANSACTION_SPENDABLE_AGE), 
       account(generateAccountKeys()) {   
     }
 

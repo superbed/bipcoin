@@ -40,8 +40,8 @@ public:
     m_currency(CryptoNote::CurrencyBuilder(m_logger).currency()),
     generator(m_currency),
     m_node(generator),
-    m_sync(m_node, m_currency.genesisBlockHash()),
-    m_transfersSync(m_currency, m_sync, m_node) {
+    m_sync(m_node, m_logger, m_currency.genesisBlockHash()),
+    m_transfersSync(m_currency, m_logger, m_sync, m_node) {
   }
 
   void addAccounts(size_t count) {
@@ -364,8 +364,8 @@ TEST_F(TransfersApi, state) {
   m_transfersSync.save(memstm);
   m_sync.start();
 
-  BlockchainSynchronizer bsync2(m_node, m_currency.genesisBlockHash());
-  TransfersSyncronizer sync2(m_currency, bsync2, m_node);
+  BlockchainSynchronizer bsync2(m_node, m_logger, m_currency.genesisBlockHash());
+  TransfersSyncronizer sync2(m_currency, m_logger, bsync2, m_node);
 
   for (size_t i = 0; i < m_accounts.size(); ++i) {
     sync2.addSubscription(createSubscription(i));

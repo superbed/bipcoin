@@ -178,7 +178,7 @@ public:
     m_currency(CurrencyBuilder(m_logger).currency()),
     generator(m_currency),
     m_node(generator),
-    m_sync(m_node, m_currency.genesisBlockHash()) {
+    m_sync(m_node, m_logger, m_currency.genesisBlockHash()) {
     m_node.setGetNewBlocksLimit(5); // sync max 5 blocks per request
   }
 
@@ -475,7 +475,7 @@ TEST_F(BcSTest, serializationCheck) {
 
   std::string first = memstream.str();
 
-  BlockchainSynchronizer sync2(m_node, m_currency.genesisBlockHash());
+  BlockchainSynchronizer sync2(m_node, m_logger, m_currency.genesisBlockHash());
 
   ASSERT_NO_THROW(sync2.load(memstream));
   std::stringstream memstream2;

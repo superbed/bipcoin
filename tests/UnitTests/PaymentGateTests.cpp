@@ -33,7 +33,7 @@ public:
   }
 
   std::unique_ptr<WalletService> createWalletService(const WalletConfiguration& cfg) {
-    wallet.reset(WalletFactory::createWallet(currency, nodeStub, dispatcher));
+    wallet.reset(WalletFactory::createWallet(currency, nodeStub, logger, dispatcher));
     std::unique_ptr<WalletService> service(new WalletService(currency, dispatcher, nodeStub, *wallet, cfg, logger));
     service->init();
     return service;
