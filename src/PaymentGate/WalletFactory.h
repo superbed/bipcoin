@@ -6,6 +6,7 @@
 
 #include "IWallet.h"
 #include "INode.h"
+#include "Logging/LoggerRef.h"
 #include <System/Dispatcher.h>
 
 #include <string>
@@ -19,7 +20,7 @@ namespace PaymentService {
 
 class WalletFactory {
 public:
-  static CryptoNote::IWallet* createWallet(const CryptoNote::Currency& currency, CryptoNote::INode& node, System::Dispatcher& dispatcher);
+  static CryptoNote::IWallet* createWallet(const CryptoNote::Currency& currency, CryptoNote::INode& node, Logging::ILogger& logger, System::Dispatcher& dispatcher);
 private:
   WalletFactory();
   ~WalletFactory();

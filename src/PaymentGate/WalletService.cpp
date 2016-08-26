@@ -369,7 +369,7 @@ void generateNewWallet(const CryptoNote::Currency &currency, const WalletConfigu
   CryptoNote::INode* nodeStub = NodeFactory::createNodeStub();
   std::unique_ptr<CryptoNote::INode> nodeGuard(nodeStub);
 
-  CryptoNote::IWallet* wallet = WalletFactory::createWallet(currency, *nodeStub, dispatcher);
+  CryptoNote::IWallet* wallet = WalletFactory::createWallet(currency, *nodeStub, logger, dispatcher);
   std::unique_ptr<CryptoNote::IWallet> walletGuard(wallet);
 
   log(Logging::INFO) << "Generating new wallet";

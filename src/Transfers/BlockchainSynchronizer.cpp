@@ -13,6 +13,7 @@
 #include "CryptoNoteCore/CryptoNoteFormatUtils.h"
 
 using namespace Crypto;
+using namespace Logging;
 
 namespace {
 
@@ -27,7 +28,8 @@ inline std::vector<uint8_t> stringToVector(const std::string& s) {
 
 namespace CryptoNote {
 
-BlockchainSynchronizer::BlockchainSynchronizer(INode& node, const Hash& genesisBlockHash) :
+BlockchainSynchronizer::BlockchainSynchronizer(INode& node, Logging::ILogger& logger, const Hash& genesisBlockHash) :
+  m_logger(logger, "BlockchainSynchronizer"),
   m_node(node),
   m_genesisBlockHash(genesisBlockHash),
   m_currentState(State::stopped),

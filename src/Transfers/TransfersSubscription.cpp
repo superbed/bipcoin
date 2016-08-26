@@ -9,8 +9,8 @@ using namespace Crypto;
 
 namespace CryptoNote {
 
-TransfersSubscription::TransfersSubscription(const CryptoNote::Currency& currency, const AccountSubscription& sub)
-  : subscription(sub), transfers(currency, sub.transactionSpendableAge) {}
+TransfersSubscription::TransfersSubscription(const CryptoNote::Currency& currency, Logging::ILogger& logger, const AccountSubscription& sub)
+  : subscription(sub), logger(logger, "TransfersSubscription"), transfers(currency, logger, sub.transactionSpendableAge) {}
 
 
 SynchronizationStart TransfersSubscription::getSyncStart() {

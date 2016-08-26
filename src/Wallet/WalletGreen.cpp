@@ -224,14 +224,15 @@ CryptoNote::AccountPublicAddress parseAccountAddressString(const std::string& ad
 
 namespace CryptoNote {
 
-WalletGreen::WalletGreen(System::Dispatcher& dispatcher, const Currency& currency, INode& node, uint32_t transactionSoftLockTime) :
+WalletGreen::WalletGreen(System::Dispatcher& dispatcher, const Currency& currency, INode& node, Logging::ILogger& logger, uint32_t transactionSoftLockTime) :
   m_dispatcher(dispatcher),
   m_currency(currency),
   m_node(node),
+  m_logger(logger, "WalletGreen/empty"),
   m_stopped(false),
   m_blockchainSynchronizerStarted(false),
-  m_blockchainSynchronizer(node, currency.genesisBlockHash()),
-  m_synchronizer(currency, m_blockchainSynchronizer, node),
+  m_blockchainSynchronizer(node, logger, currency.genesisBlockHash()),
+  m_transferssynchronizer(currency, logger, m_blockchainSynchronizer, node),
   m_eventOccurred(m_dispatcher),
   m_readyEvent(m_dispatcher),
   m_state(WalletState::NOT_INITIALIZED),
@@ -277,7 +278,7 @@ void WalletGreen::shutdown() {
 
 void WalletGreen::doShutdown() {
   if (m_walletsContainer.size() != 0) {
-    m_synchronizer.unsubscribeConsumerNotifications(m_viewPublicKey, this);
+    m_transferssynchronizer.unsubscribeConsumerNotifications(m_viewPublicKey, this);
   }
 
   stopBlockchainSynchronizer();
@@ -293,8 +294,8 @@ void WalletGreen::doShutdown() {
 
 void WalletGreen::clearCaches() {
   std::vector<AccountPublicAddress> subscriptions;
-  m_synchronizer.getSubscriptions(subscriptions);
-  std::for_each(subscriptions.begin(), subscriptions.end(), [this] (const AccountPublicAddress& address) { m_synchronizer.removeSubscription(address); });
+  m_transferssynchronizer.getSubscriptions(subscriptions);
+  std::for_each(subscriptions.begin(), subscriptions.end(), [this] (const AccountPublicAddress& address) { m_transferssynchronizer.removeSubscription(address); });
 
   m_walletsContainer.clear();
   m_unlockTransactionsJob.clear();
@@ -358,7 +359,7 @@ void WalletGreen::unsafeSave(std::ostream& destination, bool saveDetails, bool s
     m_actualBalance,
     m_pendingBalance,
     m_walletsContainer,
-    m_synchronizer,
+    m_transferssynchronizer,
     m_unlockTransactionsJob,
     transactions,
     transfers,
@@ -383,7 +384,7 @@ void WalletGreen::load(std::istream& source, const std::string& password) {
 
   assert(m_blockchain.empty());
   if (m_walletsContainer.get<RandomAccessIndex>().size() != 0) {
-    m_synchronizer.subscribeConsumerNotifications(m_viewPublicKey, this);
+    m_transferssynchronizer.subscribeConsumerNotifications(m_viewPublicKey, this);
     getViewKeyKnownBlocks(m_viewPublicKey);
 
     startBlockchainSynchronizer();
@@ -402,7 +403,7 @@ void WalletGreen::unsafeLoad(std::istream& source, const std::string& password) 
     m_actualBalance,
     m_pendingBalance,
     m_walletsContainer,
-    m_synchronizer,
+    m_transferssynchronizer,
     m_unlockTransactionsJob,
     m_transactions,
     m_transfers,
@@ -559,7 +560,7 @@ std::string WalletGreen::addWallet(const Crypto::PublicKey& spendPublicKey, cons
   sub.syncStart.height = 0;
   sub.syncStart.timestamp = std::max(creationTimestamp, ACCOUNT_CREATE_TIME_ACCURACY) - ACCOUNT_CREATE_TIME_ACCURACY;
 
-  auto& trSubscription = m_synchronizer.addSubscription(sub);
+  auto& trSubscription = m_transferssynchronizer.addSubscription(sub);
   ITransfersContainer* container = &trSubscription.getContainer();
 
   WalletRecord wallet;
@@ -572,7 +573,7 @@ std::string WalletGreen::addWallet(const Crypto::PublicKey& spendPublicKey, cons
   index.insert(insertIt, std::move(wallet));
 
   if (index.size() == 1) {
-    m_synchronizer.subscribeConsumerNotifications(m_viewPublicKey, this);
+    m_transferssynchronizer.subscribeConsumerNotifications(m_viewPublicKey, this);
     getViewKeyKnownBlocks(m_viewPublicKey);
   }
 
@@ -595,7 +596,7 @@ void WalletGreen::deleteAddress(const std::string& address) {
   m_actualBalance -= it->actualBalance;
   m_pendingBalance -= it->pendingBalance;
 
-  m_synchronizer.removeSubscription(pubAddr);
+  m_transferssynchronizer.removeSubscription(pubAddr);
 
   deleteContainerFromUnlockTransactionJobs(it->container);
   std::vector<size_t> deletedTransactions;
@@ -2374,7 +2375,7 @@ void WalletGreen::filterOutTransactions(WalletTransactions& transactions, Wallet
 }
 
 void WalletGreen::getViewKeyKnownBlocks(const Crypto::PublicKey& viewPublicKey) {
-  std::vector<Crypto::Hash> blockchain = m_synchronizer.getViewKeyKnownBlocks(m_viewPublicKey);
+  std::vector<Crypto::Hash> blockchain = m_transferssynchronizer.getViewKeyKnownBlocks(m_viewPublicKey);
   m_blockchain.insert(m_blockchain.end(), blockchain.begin(), blockchain.end());
 }
 

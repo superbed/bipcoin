@@ -8,11 +8,13 @@
 #include "TransfersContainer.h"
 #include "IObservableImpl.h"
 
+#include "Logging/LoggerRef.h"
+
 namespace CryptoNote {
 
 class TransfersSubscription : public IObservableImpl < ITransfersObserver, ITransfersSubscription > {
 public:
-  TransfersSubscription(const CryptoNote::Currency& currency, const AccountSubscription& sub);
+  TransfersSubscription(const CryptoNote::Currency& currency, Logging::ILogger& logger, const AccountSubscription& sub);
 
   SynchronizationStart getSyncStart();
   void onBlockchainDetach(uint32_t height);
@@ -30,6 +32,7 @@ public:
   virtual ITransfersContainer& getContainer() override;
 
 private:
+  Logging::LoggerRef logger;
   TransfersContainer transfers;
   AccountSubscription subscription;
 };
