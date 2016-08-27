@@ -1,11 +1,11 @@
 #!/bin/bash
-STR="0-0-0-2"
+STR="0-0-0-3"
 
 #rm -Rf ~/.bipcoin
 
 #make it
-#cmake . -DSTATIC=True
-#make
+cmake . -DSTATIC=True
+make
 
 #archive it
 rm -Rf build

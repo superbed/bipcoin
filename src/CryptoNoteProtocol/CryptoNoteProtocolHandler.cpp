@@ -280,11 +280,9 @@ int CryptoNoteProtocolHandler::handle_notify_new_transactions(int command, NOTIF
     m_core.handle_incoming_tx(asBinaryArray(*tx_blob_it), tvc, false);
     if (tvc.m_verifivation_failed) {
       logger(Logging::INFO) << context << "Tx verification failed";
-    }
-    if (!tvc.m_verifivation_failed && tvc.m_should_be_relayed) {
-      ++tx_blob_it;
-    } else {
       tx_blob_it = arg.txs.erase(tx_blob_it);
+    } else {
+      ++tx_blob_it;
     }
   }
 
