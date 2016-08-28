@@ -1,3 +1,7 @@
+BipCoin 0.0.0.2  (August 26, 2016)
+- stop propagating "Tx verification failed"
+- Add logging to wallet synchronization routines
+
 BipCoin 0.0.0.2  (August 24, 2016)
 
 - Compiler warnings: Added #ifdef WIN32 
