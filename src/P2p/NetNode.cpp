@@ -1,6 +1,19 @@
-// Copyright (c) 2011-2016 The Cryptonote developers
-// Distributed under the MIT/X11 software license, see the accompanying
-// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+//
+// This file is part of Bytecoin.
+//
+// Bytecoin is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Bytecoin is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with Bytecoin.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "NetNode.h"
 
@@ -192,7 +205,7 @@ namespace CryptoNote
     m_payload_handler(payload_handler),
     m_allow_local_ip(false),
     m_hide_my_port(false),
-    m_network_id(CRYPTONOTE_NETWORK),
+    m_network_id(BYTECOIN_NETWORK),
     logger(log, "node_server"),
     m_stopEvent(m_dispatcher),
     m_idleTimer(m_dispatcher),
@@ -211,7 +224,6 @@ namespace CryptoNote
     
     if (version != 1) {
       throw std::runtime_error("Unsupported version");
-      return;
     }
 
     s(m_peerlist, "peerlist");
@@ -960,8 +972,35 @@ namespace CryptoNote
 #ifdef ALLOW_DEBUG_COMMANDS
 
   bool NodeServer::check_trust(const proof_of_trust &tr) {
-      logger(ERROR) << "check_trust failed: removed";
+    uint64_t local_time = time(NULL);
+    uint64_t time_delata = local_time > tr.time ? local_time - tr.time : tr.time - local_time;
+
+    if (time_delata > 24 * 60 * 60) {
+      logger(ERROR) << "check_trust failed to check time conditions, local_time=" << local_time << ", proof_time=" << tr.time;
       return false;
+    }
+
+    if (m_last_stat_request_time >= tr.time) {
+      logger(ERROR) << "check_trust failed to check time conditions, last_stat_request_time=" << m_last_stat_request_time << ", proof_time=" << tr.time;
+      return false;
+    }
+
+    if (m_config.m_peer_id != tr.peer_id) {
+      logger(ERROR) << "check_trust failed: peer_id mismatch (passed " << tr.peer_id << ", expected " << m_config.m_peer_id << ")";
+      return false;
+    }
+
+    Crypto::PublicKey pk;
+    Common::podFromHex(CryptoNote::P2P_STAT_TRUSTED_PUB_KEY, pk);
+    Crypto::Hash h = get_proof_of_trust_hash(tr);
+    if (!Crypto::check_signature(h, pk, tr.sign)) {
+      logger(ERROR) << "check_trust failed: sign check failed";
+      return false;
+    }
+
+    //update last request time
+    m_last_stat_request_time = tr.time;
+    return true;
   }
   //-----------------------------------------------------------------------------------
   

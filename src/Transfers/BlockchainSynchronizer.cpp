@@ -1,6 +1,19 @@
-// Copyright (c) 2011-2016 The Cryptonote developers
-// Distributed under the MIT/X11 software license, see the accompanying
-// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+//
+// This file is part of Bytecoin.
+//
+// Bytecoin is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Bytecoin is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with Bytecoin.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "BlockchainSynchronizer.h"
 
@@ -20,6 +33,8 @@ using namespace Crypto;
 using namespace Logging;
 
 namespace {
+
+const int RETRY_TIMEOUT = 5;
 
 std::ostream& operator<<(std::ostream& os, const CryptoNote::IBlockchainConsumer* consumer) {
   return os << "0x" << std::setw(8) << std::setfill('0') << std::hex << reinterpret_cast<uintptr_t>(consumer) << std::dec << std::setfill(' ');
@@ -232,7 +247,7 @@ bool BlockchainSynchronizer::setFutureStateIf(State s, std::function<bool(void)>
 
 void BlockchainSynchronizer::actualizeFutureState() {
   std::unique_lock<std::mutex> lk(m_stateMutex);
-  if (m_currentState == State::stopped && m_futureState == State::blockchainSync) { // start(), immideately attach observer
+  if (m_currentState == State::stopped && m_futureState == State::deleteOldTxs) { // start(), immideately attach observer
     m_node.addObserver(this);
   }
 
@@ -250,6 +265,7 @@ void BlockchainSynchronizer::actualizeFutureState() {
       doRemoveUnconfirmedTransaction(transactionHash);
       detachedPromise.set_value();
     } catch (...) {
+      m_logger(ERROR, BRIGHT_RED) << "Failed to remove unconfirmed transaction, hash " << transactionHash;
       detachedPromise.set_exception(std::current_exception());
     }
   }
@@ -272,6 +288,11 @@ void BlockchainSynchronizer::actualizeFutureState() {
   m_currentState = m_futureState;
   switch (m_futureState) {
   case State::stopped:
+    break;
+  case State::deleteOldTxs:
+    m_futureState = State::blockchainSync;
+    lk.unlock();
+    removeOutdatedTransactions();
     break;
   case State::blockchainSync:
     m_futureState = State::poolSync;
@@ -328,7 +349,7 @@ void BlockchainSynchronizer::start() {
     throw std::runtime_error(message);
   }
 
-  if (!setFutureStateIf(State::blockchainSync, [this] { return m_currentState == State::stopped && m_futureState == State::stopped; })) {
+  if (!setFutureStateIf(State::deleteOldTxs, [this] { return m_currentState == State::stopped && m_futureState == State::stopped; })) {
     auto message = "Failed to start: already started";
     m_logger(ERROR, BRIGHT_RED) << message;
     throw std::runtime_error(message);
@@ -554,7 +575,9 @@ BlockchainSynchronizer::UpdateConsumersResult BlockchainSynchronizer::updateCons
     if (result.hasNewBlocks) {
       uint32_t startOffset = result.newBlockHeight - interval.startHeight;
       // update consumer
-      if (kv.first->onNewBlocks(blocks.data() + startOffset, result.newBlockHeight, static_cast<uint32_t>(blocks.size()) - startOffset)) {
+      uint32_t blockCount = static_cast<uint32_t>(blocks.size()) - startOffset;
+      m_logger(DEBUGGING) << "Adding blocks to consumer, consumer " << kv.first << ", start index " << result.newBlockHeight << ", count " << blockCount;
+      if (kv.first->onNewBlocks(blocks.data() + startOffset, result.newBlockHeight, blockCount)) {
         // update state if consumer succeeded
         kv.second->addBlocks(interval.blocks.data() + startOffset, result.newBlockHeight, static_cast<uint32_t>(interval.blocks.size()) - startOffset);
         smthChanged = true;
@@ -572,7 +595,54 @@ BlockchainSynchronizer::UpdateConsumersResult BlockchainSynchronizer::updateCons
     m_logger(DEBUGGING) << "No new blocks received. Consumers not updated";
     return UpdateConsumersResult::nothingChanged;
   }
+}
 
+void BlockchainSynchronizer::removeOutdatedTransactions() {
+  m_logger(INFO, BRIGHT_WHITE) << "Removing outdated pool transactions...";
+
+  std::unordered_set<Crypto::Hash> unionPoolHistory;
+  std::unordered_set<Crypto::Hash> ignored;
+  getPoolUnionAndIntersection(unionPoolHistory, ignored);
+
+  GetPoolRequest request;
+  request.knownTxIds.assign(unionPoolHistory.begin(), unionPoolHistory.end());
+  request.lastKnownBlock = lastBlockId;
+
+  GetPoolResponse response;
+  response.isLastKnownBlockActual = false;
+
+  std::error_code ec = getPoolSymmetricDifferenceSync(std::move(request), response);
+
+  if (!ec) {
+    m_logger(DEBUGGING) << "Outdated pool transactions received, " << response.deletedTxIds.size() << ':' << makeContainerFormatter(response.deletedTxIds);
+
+    std::unique_lock<std::mutex> lock(m_consumersMutex);
+    for (auto& consumer : m_consumers) {
+      ec = consumer.first->onPoolUpdated({}, response.deletedTxIds);
+      if (ec) {
+        m_logger(ERROR, BRIGHT_RED) << "Failed to process outdated pool transactions: " << ec << ", " << ec.message() << ", consumer " << consumer.first;
+        break;
+      }
+    }
+  } else {
+    m_logger(ERROR, BRIGHT_RED) << "Failed to query outdated pool transaction: " << ec << ", " << ec.message();
+  }
+
+  if (!ec) {
+    m_logger(INFO, BRIGHT_WHITE) << "Outdated pool transactions processed";
+  } else {
+    m_observerManager.notify(&IBlockchainSynchronizerObserver::synchronizationCompleted, ec);
+
+    m_logger(INFO, BRIGHT_WHITE) << "Retry in " << RETRY_TIMEOUT << " seconds...";
+    std::unique_lock<std::mutex> lock(m_stateMutex);
+    bool stopped = m_hasWork.wait_for(lock, std::chrono::seconds(RETRY_TIMEOUT), [this] {
+      return m_futureState == State::stopped;
+    });
+
+    if (!stopped) {
+      m_futureState = State::deleteOldTxs;
+    }
+  }
 }
 
 void BlockchainSynchronizer::startPoolSync() {

@@ -1,6 +1,19 @@
-// Copyright (c) 2011-2016 The Cryptonote developers
-// Distributed under the MIT/X11 software license, see the accompanying
-// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+//
+// This file is part of Bytecoin.
+//
+// Bytecoin is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Bytecoin is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with Bytecoin.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "Currency.h"
 #include <cctype>
@@ -15,6 +28,7 @@
 #include "CryptoNoteFormatUtils.h"
 #include "CryptoNoteTools.h"
 #include "TransactionExtra.h"
+#include "UpgradeDetector.h"
 
 #undef ERROR
 
@@ -58,6 +72,8 @@ bool Currency::init() {
   }
 
   if (isTestnet()) {
+    m_upgradeHeightV2 = 0;
+    m_upgradeHeightV3 = static_cast<uint32_t>(-1);
     m_blocksFileName = "testnet_" + m_blocksFileName;
     m_blocksCacheFileName = "testnet_" + m_blocksCacheFileName;
     m_blockIndexesFileName = "testnet_" + m_blockIndexesFileName;
@@ -71,8 +87,14 @@ bool Currency::init() {
 bool Currency::generateGenesisBlock() {
   m_genesisBlock = boost::value_initialized<Block>();
 
-  // Hard code coinbase tx in genesis block, because "tru" generating tx use random, but genesis should be always the same
-  std::string genesisCoinbaseTxHex = GENESIS_COINBASE_TX_HEX;
+  //account_public_address ac = boost::value_initialized<AccountPublicAddress>();
+  //std::vector<size_t> sz;
+  //constructMinerTx(0, 0, 0, 0, 0, ac, m_genesisBlock.baseTransaction); // zero fee in genesis
+  //BinaryArray txb = toBinaryArray(m_genesisBlock.baseTransaction);
+  //std::string hex_tx_represent = Common::toHex(txb);
+
+  // Hard code coinbase tx in genesis block, because through generating tx use random, but genesis should be always the same
+  std::string genesisCoinbaseTxHex = "013c01ff0001ffffffffffff01029b2e4c0281c0b02e7c53291a94d1d0cbff8883f8024f5142ee494ffbbd08807121014380ba0f96e1b5c4b7adaf980d083976b37dabcbe3fc9680ab2d5cd058a62c1e";
   BinaryArray minerTxBlob;
 
   bool r =
@@ -96,21 +118,45 @@ bool Currency::generateGenesisBlock() {
   return true;
 }
 
-bool Currency::getBlockReward(size_t medianSize, size_t currentBlockSize, uint64_t alreadyGeneratedCoins,
+size_t Currency::blockGrantedFullRewardZoneByBlockVersion(uint8_t blockMajorVersion) const {
+  if (blockMajorVersion >= BLOCK_MAJOR_VERSION_3) {
+    return m_blockGrantedFullRewardZone;
+  } else if (blockMajorVersion == BLOCK_MAJOR_VERSION_2) {
+    return CryptoNote::parameters::CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE_V2;
+  } else {
+    return CryptoNote::parameters::CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE_V1;
+  }
+}
+
+uint32_t Currency::upgradeHeight(uint8_t majorVersion) const {
+  if (majorVersion == BLOCK_MAJOR_VERSION_2) {
+    return m_upgradeHeightV2;
+  } else if (majorVersion == BLOCK_MAJOR_VERSION_3) {
+    return m_upgradeHeightV3;
+  } else {
+    return static_cast<uint32_t>(-1);
+  }
+}
+
+bool Currency::getBlockReward(uint8_t blockMajorVersion, size_t medianSize, size_t currentBlockSize, uint64_t alreadyGeneratedCoins,
   uint64_t fee, uint64_t& reward, int64_t& emissionChange) const {
   assert(alreadyGeneratedCoins <= m_moneySupply);
   assert(m_emissionSpeedFactor > 0 && m_emissionSpeedFactor <= 8 * sizeof(uint64_t));
 
   uint64_t baseReward = (m_moneySupply - alreadyGeneratedCoins) >> m_emissionSpeedFactor;
 
-  medianSize = std::max(medianSize, m_blockGrantedFullRewardZone);
+  size_t blockGrantedFullRewardZone = blockGrantedFullRewardZoneByBlockVersion(blockMajorVersion);
+  medianSize = std::max(medianSize, blockGrantedFullRewardZone);
   if (currentBlockSize > UINT64_C(2) * medianSize) {
     logger(TRACE) << "Block cumulative size is too big: " << currentBlockSize << ", expected less than " << 2 * medianSize;
     return false;
   }
 
   uint64_t penalizedBaseReward = getPenalizedAmount(baseReward, medianSize, currentBlockSize);
-  uint64_t penalizedFee = getPenalizedAmount(fee, medianSize, currentBlockSize);
+  uint64_t penalizedFee = blockMajorVersion >= BLOCK_MAJOR_VERSION_2 ? getPenalizedAmount(fee, medianSize, currentBlockSize) : fee;
+if (cryptonoteCoinVersion() == 1) {
+  penalizedFee = getPenalizedAmount(fee, medianSize, currentBlockSize);
+}
 
   emissionChange = penalizedBaseReward - (fee - penalizedFee);
   reward = penalizedBaseReward + penalizedFee;
@@ -126,9 +172,9 @@ size_t Currency::maxBlockCumulativeSize(uint64_t height) const {
   return maxSize;
 }
 
-bool Currency::constructMinerTx(uint32_t height, size_t medianSize, uint64_t alreadyGeneratedCoins, size_t currentBlockSize,
-  uint64_t fee, const AccountPublicAddress& minerAddress, Transaction& tx,
-  const BinaryArray& extraNonce/* = BinaryArray()*/, size_t maxOuts/* = 1*/) const {
+bool Currency::constructMinerTx(uint8_t blockMajorVersion, uint32_t height, size_t medianSize, uint64_t alreadyGeneratedCoins, size_t currentBlockSize,
+  uint64_t fee, const AccountPublicAddress& minerAddress, Transaction& tx, const BinaryArray& extraNonce/* = BinaryArray()*/, size_t maxOuts/* = 1*/) const {
+
   tx.inputs.clear();
   tx.outputs.clear();
   tx.extra.clear();
@@ -146,7 +192,7 @@ bool Currency::constructMinerTx(uint32_t height, size_t medianSize, uint64_t alr
 
   uint64_t blockReward;
   int64_t emissionChange;
-  if (!getBlockReward(medianSize, currentBlockSize, alreadyGeneratedCoins, fee, blockReward, emissionChange)) {
+  if (!getBlockReward(blockMajorVersion, medianSize, currentBlockSize, alreadyGeneratedCoins, fee, blockReward, emissionChange)) {
     logger(INFO) << "Block is too big";
     return false;
   }
@@ -352,8 +398,8 @@ bool Currency::parseAmount(const std::string& str, uint64_t& amount) const {
   return Common::fromString(strAmount, amount);
 }
 
-Difficulty Currency::nextDifficulty(std::vector<uint64_t> timestamps,
-  std::vector<Difficulty> cumulativeDifficulties) const {
+difficulty_type Currency::nextDifficulty(std::vector<uint64_t> timestamps,
+  std::vector<difficulty_type> cumulativeDifficulties) const {
   assert(m_difficultyWindow >= 2);
 
   if (timestamps.size() > m_difficultyWindow) {
@@ -385,7 +431,7 @@ Difficulty Currency::nextDifficulty(std::vector<uint64_t> timestamps,
     timeSpan = 1;
   }
 
-  Difficulty totalWork = cumulativeDifficulties[cutEnd - 1] - cumulativeDifficulties[cutBegin];
+  difficulty_type totalWork = cumulativeDifficulties[cutEnd - 1] - cumulativeDifficulties[cutBegin];
   assert(totalWork > 0);
 
   uint64_t low, high;
@@ -397,14 +443,72 @@ Difficulty Currency::nextDifficulty(std::vector<uint64_t> timestamps,
   return (low + timeSpan - 1) / timeSpan;
 }
 
-bool Currency::checkProofOfWork(Crypto::cn_context& context, const Block& block, Difficulty currentDiffic,
+bool Currency::checkProofOfWorkV1(Crypto::cn_context& context, const Block& block, difficulty_type currentDiffic,
   Crypto::Hash& proofOfWork) const {
+  if (BLOCK_MAJOR_VERSION_1 != block.majorVersion) {
+    return false;
+  }
 
   if (!get_block_longhash(context, block, proofOfWork)) {
     return false;
   }
 
   return check_hash(proofOfWork, currentDiffic);
+}
+
+bool Currency::checkProofOfWorkV2(Crypto::cn_context& context, const Block& block, difficulty_type currentDiffic,
+  Crypto::Hash& proofOfWork) const {
+  if (block.majorVersion < BLOCK_MAJOR_VERSION_2) {
+    return false;
+  }
+
+  if (!get_block_longhash(context, block, proofOfWork)) {
+    return false;
+  }
+
+  if (!check_hash(proofOfWork, currentDiffic)) {
+    return false;
+  }
+
+  TransactionExtraMergeMiningTag mmTag;
+  if (!getMergeMiningTagFromExtra(block.parentBlock.baseTransaction.extra, mmTag)) {
+    logger(ERROR) << "merge mining tag wasn't found in extra of the parent block miner transaction";
+    return false;
+  }
+
+  if (8 * sizeof(m_genesisBlockHash) < block.parentBlock.blockchainBranch.size()) {
+    return false;
+  }
+
+  Crypto::Hash auxBlockHeaderHash;
+  if (!get_aux_block_header_hash(block, auxBlockHeaderHash)) {
+    return false;
+  }
+
+  Crypto::Hash auxBlocksMerkleRoot;
+  Crypto::tree_hash_from_branch(block.parentBlock.blockchainBranch.data(), block.parentBlock.blockchainBranch.size(),
+    auxBlockHeaderHash, &m_genesisBlockHash, auxBlocksMerkleRoot);
+
+  if (auxBlocksMerkleRoot != mmTag.merkleRoot) {
+    logger(ERROR, BRIGHT_YELLOW) << "Aux block hash wasn't found in merkle tree";
+    return false;
+  }
+
+  return true;
+}
+
+bool Currency::checkProofOfWork(Crypto::cn_context& context, const Block& block, difficulty_type currentDiffic, Crypto::Hash& proofOfWork) const {
+  switch (block.majorVersion) {
+  case BLOCK_MAJOR_VERSION_1:
+    return checkProofOfWorkV1(context, block, currentDiffic, proofOfWork);
+
+  case BLOCK_MAJOR_VERSION_2:
+  case BLOCK_MAJOR_VERSION_3:
+    return checkProofOfWorkV2(context, block, currentDiffic, proofOfWork);
+  }
+
+  logger(ERROR, BRIGHT_RED) << "Unknown block major version: " << block.majorVersion << "." << block.minorVersion;
+  return false;
 }
 
 size_t Currency::getApproximateMaximumInputCount(size_t transactionSize, size_t outputCount, size_t mixinCount) const {
@@ -442,10 +546,12 @@ CurrencyBuilder::CurrencyBuilder(Logging::ILogger& log) : m_currency(log) {
 
   moneySupply(parameters::MONEY_SUPPLY);
   emissionSpeedFactor(parameters::EMISSION_SPEED_FACTOR);
+cryptonoteCoinVersion(parameters::CRYPTONOTE_COIN_VERSION);
 
   rewardBlocksWindow(parameters::CRYPTONOTE_REWARD_BLOCKS_WINDOW);
   blockGrantedFullRewardZone(parameters::CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE);
   minerTxBlobReservedSize(parameters::CRYPTONOTE_COINBASE_BLOB_RESERVED_SIZE);
+maxTransactionSizeLimit(parameters::MAX_TRANSACTION_SIZE_LIMIT);
 
   numberOfDecimalPlaces(parameters::CRYPTONOTE_DISPLAY_DECIMAL_POINT);
 
@@ -468,9 +574,16 @@ CurrencyBuilder::CurrencyBuilder(Logging::ILogger& log) : m_currency(log) {
   mempoolTxFromAltBlockLiveTime(parameters::CRYPTONOTE_MEMPOOL_TX_FROM_ALT_BLOCK_LIVETIME);
   numberOfPeriodsToForgetTxDeletedFromPool(parameters::CRYPTONOTE_NUMBER_OF_PERIODS_TO_FORGET_TX_DELETED_FROM_POOL);
 
-  fusionTxMaxSize(parameters::FUSION_TX_MAX_SIZE);
+// fusion transactions fix
+fusionTxMaxSize(parameters::MAX_TRANSACTION_SIZE_LIMIT * 30 / 100);
   fusionTxMinInputCount(parameters::FUSION_TX_MIN_INPUT_COUNT);
   fusionTxMinInOutCountRatio(parameters::FUSION_TX_MIN_IN_OUT_COUNT_RATIO);
+
+  upgradeHeightV2(parameters::UPGRADE_HEIGHT_V2);
+  upgradeHeightV3(parameters::UPGRADE_HEIGHT_V3);
+  upgradeVotingThreshold(parameters::UPGRADE_VOTING_THRESHOLD);
+  upgradeVotingWindow(parameters::UPGRADE_VOTING_WINDOW);
+  upgradeWindow(parameters::UPGRADE_WINDOW);
 
   blocksFileName(parameters::CRYPTONOTE_BLOCKS_FILENAME);
   blocksCacheFileName(parameters::CRYPTONOTE_BLOCKSCACHE_FILENAME);
@@ -484,11 +597,9 @@ CurrencyBuilder::CurrencyBuilder(Logging::ILogger& log) : m_currency(log) {
 Transaction CurrencyBuilder::generateGenesisTransaction() {
   CryptoNote::Transaction tx;
   CryptoNote::AccountPublicAddress ac = boost::value_initialized<CryptoNote::AccountPublicAddress>();
-  m_currency.constructMinerTx(0, 0, 0, 0, 0, ac, tx); // zero fee in genesis
-
+  m_currency.constructMinerTx(1, 0, 0, 0, 0, 0, ac, tx); // zero fee in genesis
   return tx;
 }
-
 CurrencyBuilder& CurrencyBuilder::emissionSpeedFactor(unsigned int val) {
   if (val <= 0 || val > 8 * sizeof(uint64_t)) {
     throw std::invalid_argument("val at emissionSpeedFactor()");
@@ -513,6 +624,24 @@ CurrencyBuilder& CurrencyBuilder::difficultyWindow(size_t val) {
     throw std::invalid_argument("val at difficultyWindow()");
   }
   m_currency.m_difficultyWindow = val;
+  return *this;
+}
+
+CurrencyBuilder& CurrencyBuilder::upgradeVotingThreshold(unsigned int val) {
+  if (val <= 0 || val > 100) {
+    throw std::invalid_argument("val at upgradeVotingThreshold()");
+  }
+
+  m_currency.m_upgradeVotingThreshold = val;
+  return *this;
+}
+
+CurrencyBuilder& CurrencyBuilder::upgradeWindow(size_t val) {
+  if (val <= 0) {
+    throw std::invalid_argument("val at upgradeWindow()");
+  }
+
+  m_currency.m_upgradeWindow = val;
   return *this;
 }
 
