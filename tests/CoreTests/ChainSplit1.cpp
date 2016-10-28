@@ -1,6 +1,19 @@
-// Copyright (c) 2011-2016 The Cryptonote developers
-// Distributed under the MIT/X11 software license, see the accompanying
-// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+//
+// This file is part of Bytecoin.
+//
+// Bytecoin is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Bytecoin is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with Bytecoin.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "ChainSplit1.h"
 
@@ -131,21 +144,21 @@ bool gen_simple_chain_split_1::generate(std::vector<test_event_entry> &events) c
   return true;
 }
 //-----------------------------------------------------------------------------------------------------
-bool gen_simple_chain_split_1::check_mempool_2(CryptoNote::Core& c, size_t ev_index, const std::vector<test_event_entry> &events)
+bool gen_simple_chain_split_1::check_mempool_2(CryptoNote::core& c, size_t ev_index, const std::vector<test_event_entry> &events)
 {
   DEFINE_TESTS_ERROR_CONTEXT("gen_simple_chain_split_1::check_mempool_2");
   CHECK_TEST_CONDITION(c.get_pool_transactions_count() == 2);
   return true;
 }
 //-----------------------------------------------------------------------------------------------------
-bool gen_simple_chain_split_1::check_mempool_1(CryptoNote::Core& c, size_t ev_index, const std::vector<test_event_entry> &events)
+bool gen_simple_chain_split_1::check_mempool_1(CryptoNote::core& c, size_t ev_index, const std::vector<test_event_entry> &events)
 {
   DEFINE_TESTS_ERROR_CONTEXT("gen_simple_chain_split_1::check_mempool_1");
   CHECK_TEST_CONDITION(c.get_pool_transactions_count() == 3);
   return true;
 }
 //-----------------------------------------------------------------------------------------------------
-bool gen_simple_chain_split_1::check_split_not_switched(CryptoNote::Core& c, size_t ev_index, const std::vector<test_event_entry> &events)
+bool gen_simple_chain_split_1::check_split_not_switched(CryptoNote::core& c, size_t ev_index, const std::vector<test_event_entry> &events)
 {
   DEFINE_TESTS_ERROR_CONTEXT("gen_simple_chain_split_1::check_split_not_switched");
   //check height
@@ -156,7 +169,7 @@ bool gen_simple_chain_split_1::check_split_not_switched(CryptoNote::Core& c, siz
   return true;
 }
 //-----------------------------------------------------------------------------------------------------
-bool gen_simple_chain_split_1::check_split_not_switched2(CryptoNote::Core& c, size_t ev_index, const std::vector<test_event_entry> &events)
+bool gen_simple_chain_split_1::check_split_not_switched2(CryptoNote::core& c, size_t ev_index, const std::vector<test_event_entry> &events)
 {
   DEFINE_TESTS_ERROR_CONTEXT("gen_simple_chain_split_1::check_split_not_switched2");
   //check height
@@ -167,7 +180,7 @@ bool gen_simple_chain_split_1::check_split_not_switched2(CryptoNote::Core& c, si
   return true;
 }
 //-----------------------------------------------------------------------------------------------------
-bool gen_simple_chain_split_1::check_split_switched(CryptoNote::Core& c, size_t ev_index, const std::vector<test_event_entry> &events)
+bool gen_simple_chain_split_1::check_split_switched(CryptoNote::core& c, size_t ev_index, const std::vector<test_event_entry> &events)
 {
   DEFINE_TESTS_ERROR_CONTEXT("gen_simple_chain_split_1::check_split_switched");
 
@@ -179,7 +192,7 @@ bool gen_simple_chain_split_1::check_split_switched(CryptoNote::Core& c, size_t 
   return true;
 }
 //-----------------------------------------------------------------------------------------------------
-bool gen_simple_chain_split_1::check_split_not_switched_back(CryptoNote::Core& c, size_t ev_index, const std::vector<test_event_entry> &events)
+bool gen_simple_chain_split_1::check_split_not_switched_back(CryptoNote::core& c, size_t ev_index, const std::vector<test_event_entry> &events)
 {
   DEFINE_TESTS_ERROR_CONTEXT("gen_simple_chain_split_1::check_split_not_switched_back");
   //check height
@@ -191,7 +204,7 @@ bool gen_simple_chain_split_1::check_split_not_switched_back(CryptoNote::Core& c
   return true;
 }
 //-----------------------------------------------------------------------------------------------------
-bool gen_simple_chain_split_1::check_split_switched_back_1(CryptoNote::Core& c, size_t ev_index, const std::vector<test_event_entry> &events)
+bool gen_simple_chain_split_1::check_split_switched_back_1(CryptoNote::core& c, size_t ev_index, const std::vector<test_event_entry> &events)
 {
   DEFINE_TESTS_ERROR_CONTEXT("gen_simple_chain_split_1::check_split_switched_back_1");
 
@@ -203,7 +216,7 @@ bool gen_simple_chain_split_1::check_split_switched_back_1(CryptoNote::Core& c, 
 
   return true;
 }//-----------------------------------------------------------------------------------------------------
-bool gen_simple_chain_split_1::check_split_switched_back_2(CryptoNote::Core& c, size_t ev_index, const std::vector<test_event_entry> &events)
+bool gen_simple_chain_split_1::check_split_switched_back_2(CryptoNote::core& c, size_t ev_index, const std::vector<test_event_entry> &events)
 {
   DEFINE_TESTS_ERROR_CONTEXT("gen_simple_chain_split_1::check_split_switched_back_2");
 
@@ -216,14 +229,14 @@ bool gen_simple_chain_split_1::check_split_switched_back_2(CryptoNote::Core& c, 
 }
 //-----------------------------------------------------------------------------------------------------
 /*
-bool gen_simple_chain_split_1::check_orphaned_chain_1(CryptoNote::Core& c, size_t ev_index, const std::vector<test_event_entry> &events)
+bool gen_simple_chain_split_1::check_orphaned_chain_1(CryptoNote::core& c, size_t ev_index, const std::vector<test_event_entry> &events)
 {
   DEFINE_TESTS_ERROR_CONTEXT("gen_simple_chain_split_1::check_orphaned_chain_1");
   CHECK_TEST_CONDITION(c.get_orphaned_by_prev_blocks_count() == 2);
   return true;
 }
 //-----------------------------------------------------------------------------------------------------
-bool gen_simple_chain_split_1::check_orphaned_switched_to_alternative(CryptoNote::Core& c, size_t ev_index, const std::vector<test_event_entry> &events)
+bool gen_simple_chain_split_1::check_orphaned_switched_to_alternative(CryptoNote::core& c, size_t ev_index, const std::vector<test_event_entry> &events)
 {
   DEFINE_TESTS_ERROR_CONTEXT("gen_simple_chain_split_1::check_orphaned_switched_to_alternative");
   CHECK_TEST_CONDITION(c.get_orphaned_by_prev_blocks_count() == 0);
@@ -232,14 +245,14 @@ bool gen_simple_chain_split_1::check_orphaned_switched_to_alternative(CryptoNote
   return true;
 }
 //-----------------------------------------------------------------------------------------------------
-bool gen_simple_chain_split_1::check_orphaned_chain_2(CryptoNote::Core& c, size_t ev_index, const std::vector<test_event_entry> &events)
+bool gen_simple_chain_split_1::check_orphaned_chain_2(CryptoNote::core& c, size_t ev_index, const std::vector<test_event_entry> &events)
 {
   DEFINE_TESTS_ERROR_CONTEXT("gen_simple_chain_split_1::check_orphaned_chain_2");
   CHECK_TEST_CONDITION(c.get_orphaned_by_prev_blocks_count() == 4);
   return true;
 }
 //-----------------------------------------------------------------------------------------------------
-bool gen_simple_chain_split_1::check_orphaned_switched_to_main(CryptoNote::Core& c, size_t ev_index, const std::vector<test_event_entry> &events)
+bool gen_simple_chain_split_1::check_orphaned_switched_to_main(CryptoNote::core& c, size_t ev_index, const std::vector<test_event_entry> &events)
 {
   DEFINE_TESTS_ERROR_CONTEXT("gen_simple_chain_split_1::check_orphaned_switched_to_main");
   CHECK_TEST_CONDITION(c.get_orphaned_by_prev_blocks_count() == 0);
@@ -248,7 +261,7 @@ bool gen_simple_chain_split_1::check_orphaned_switched_to_main(CryptoNote::Core&
   return true;
 }
 //-----------------------------------------------------------------------------------------------------
-bool gen_simple_chain_split_1::check_orphaned_chain_38(CryptoNote::Core& c, size_t ev_index, const std::vector<test_event_entry> &events)
+bool gen_simple_chain_split_1::check_orphaned_chain_38(CryptoNote::core& c, size_t ev_index, const std::vector<test_event_entry> &events)
 {
   DEFINE_TESTS_ERROR_CONTEXT("gen_simple_chain_split_1::check_orphaned_chain_38");
   CHECK_TEST_CONDITION(c.get_orphaned_by_prev_blocks_count() == 6);
@@ -257,7 +270,7 @@ bool gen_simple_chain_split_1::check_orphaned_chain_38(CryptoNote::Core& c, size
   return true;
 }
 //-----------------------------------------------------------------------------------------------------
-bool gen_simple_chain_split_1::check_orphaned_chain_39(CryptoNote::Core& c, size_t ev_index, const std::vector<test_event_entry> &events)
+bool gen_simple_chain_split_1::check_orphaned_chain_39(CryptoNote::core& c, size_t ev_index, const std::vector<test_event_entry> &events)
 {
   DEFINE_TESTS_ERROR_CONTEXT("gen_simple_chain_split_1::check_orphaned_chain_39");
   CHECK_TEST_CONDITION(c.get_orphaned_by_prev_blocks_count() == 4);
@@ -266,7 +279,7 @@ bool gen_simple_chain_split_1::check_orphaned_chain_39(CryptoNote::Core& c, size
   return true;
 }
 //-----------------------------------------------------------------------------------------------------
-bool gen_simple_chain_split_1::check_orphaned_chain_40(CryptoNote::Core& c, size_t ev_index, const std::vector<test_event_entry> &events)
+bool gen_simple_chain_split_1::check_orphaned_chain_40(CryptoNote::core& c, size_t ev_index, const std::vector<test_event_entry> &events)
 {
   DEFINE_TESTS_ERROR_CONTEXT("gen_simple_chain_split_1::check_orphaned_chain_40");
   CHECK_TEST_CONDITION(c.get_orphaned_by_prev_blocks_count() == 5);
@@ -275,7 +288,7 @@ bool gen_simple_chain_split_1::check_orphaned_chain_40(CryptoNote::Core& c, size
   return true;
 }
 //-----------------------------------------------------------------------------------------------------
-bool gen_simple_chain_split_1::check_orphaned_chain_41(CryptoNote::Core& c, size_t ev_index, const std::vector<test_event_entry> &events)
+bool gen_simple_chain_split_1::check_orphaned_chain_41(CryptoNote::core& c, size_t ev_index, const std::vector<test_event_entry> &events)
 {
   DEFINE_TESTS_ERROR_CONTEXT("gen_simple_chain_split_1::check_orphaned_chain_41");
   CHECK_TEST_CONDITION(c.get_orphaned_by_prev_blocks_count() == 0);

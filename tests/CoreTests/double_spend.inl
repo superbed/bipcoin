@@ -1,6 +1,19 @@
-// Copyright (c) 2011-2016 The Cryptonote developers
-// Distributed under the MIT/X11 software license, see the accompanying
-// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+//
+// This file is part of Bytecoin.
+//
+// Bytecoin is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Bytecoin is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with Bytecoin.  If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
@@ -36,31 +49,31 @@ bool gen_double_spend_base<concrete_test>::check_block_verification_context(cons
 }
 
 template<class concrete_test>
-bool gen_double_spend_base<concrete_test>::mark_last_valid_block(CryptoNote::Core& c, size_t /*ev_index*/, const std::vector<test_event_entry>& /*events*/)
+bool gen_double_spend_base<concrete_test>::mark_last_valid_block(CryptoNote::core& c, size_t /*ev_index*/, const std::vector<test_event_entry>& /*events*/)
 {
   std::list<CryptoNote::Block> block_list;
   bool r = c.get_blocks(c.get_current_blockchain_height() - 1, 1, block_list);
-  CHECK_AND_ASSERT_MES(r, false, "Core::get_blocks failed");
+  CHECK_AND_ASSERT_MES(r, false, "core::get_blocks failed");
   m_last_valid_block = block_list.back();
   return true;
 }
 
 template<class concrete_test>
-bool gen_double_spend_base<concrete_test>::mark_invalid_tx(CryptoNote::Core& /*c*/, size_t ev_index, const std::vector<test_event_entry>& /*events*/)
+bool gen_double_spend_base<concrete_test>::mark_invalid_tx(CryptoNote::core& /*c*/, size_t ev_index, const std::vector<test_event_entry>& /*events*/)
 {
   m_invalid_tx_index = ev_index + 1;
   return true;
 }
 
 template<class concrete_test>
-bool gen_double_spend_base<concrete_test>::mark_invalid_block(CryptoNote::Core& /*c*/, size_t ev_index, const std::vector<test_event_entry>& /*events*/)
+bool gen_double_spend_base<concrete_test>::mark_invalid_block(CryptoNote::core& /*c*/, size_t ev_index, const std::vector<test_event_entry>& /*events*/)
 {
   m_invalid_block_index = ev_index + 1;
   return true;
 }
 
 template<class concrete_test>
-bool gen_double_spend_base<concrete_test>::check_double_spend(CryptoNote::Core& c, size_t /*ev_index*/, const std::vector<test_event_entry>& events)
+bool gen_double_spend_base<concrete_test>::check_double_spend(CryptoNote::core& c, size_t /*ev_index*/, const std::vector<test_event_entry>& events)
 {
   DEFINE_TESTS_ERROR_CONTEXT("gen_double_spend_base::check_double_spend");
 
