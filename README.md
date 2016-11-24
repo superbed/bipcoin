@@ -1,3 +1,5 @@
+##BipCoin
+
 BipCoin is the first cryptocurrency covered by The BipCot NoGov license.
 This allows use and re-use by anyone except governments and government agents. 
 
