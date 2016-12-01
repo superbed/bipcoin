@@ -124,7 +124,11 @@ const char* const SEED_NODES[] = {
   "bipcoin.freedomfeens.com:18870", 
   "bipcoin.alienseed.com:18870",
   "bip.cryptonotepool.com:18870",
-  "werdwerd.us:18870"
+  "werdwerd.us:18870",
+  "bip1.werdwerd.us:18870",
+  "bip2.werdwerd.us:18870",
+  "bip3.werdwerd.us:18870",
+  "bip4.werdwerd.us:18870"
 };
 
 struct CheckpointData {
